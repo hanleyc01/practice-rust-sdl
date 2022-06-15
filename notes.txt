@@ -1,1 +1,139 @@
+
 // Learning SDL for Rust Game-dev
+1. The Game Loop
+    - 1.1
+    The "game loop" is the central abstraction in game development, it aims to decouple
+    the playing of the game from the any user input or processor speed
+
+    This is contrasted with batch scripts which are simply imperative programs: you enter
+    in the code and it runs until it's finished.
+
+    - 1.2
+    Event loops are simply programs that loop until given a certain input;
+    eg
+    
+    while(true)
+    {
+        Event* event = waitForEvent();
+        dispatchEvent(event);
+    }
+
+    The difference is that instead of waiting for text commands, the
+    program is waiting for *input events*
+
+    ***THIS IS THE FIRST KEY FOR THE GAME LOOP***
+        it does NOT wait for user input, rather it //processes// user inpput,
+        while none it just keeps on spinning
+
+    - 1.3
+    Example of a game loop:
+
+    while (true)
+    {
+        processInput();
+        update();
+        render();
+    }
+
+        But this has a problem -> it is tied to the processing speed:
+        thus:
+
+    while(true)
+    {
+        double start = getCurrentTime();
+        processInput();
+        update();
+        render();
+
+        sleep(start + MS_PER_FRAME - getCurrentTime());
+    }
+
+    This works as long as we can reliably do all of our computations within the time it takes
+    to process user input.
+
+    This approach slows down the game, so it does affect all users
+
+    So, we can account for this by taking using a / variable time step /
+
+    double lastTime = getCurrentTime();
+    while true 
+    {
+        double current = getCurrentTime();
+        double elapsed = current - getCurrentTime();
+        processInput();
+        update(elapsed);
+        render();
+        lastTime = current;
+    }
+
+    "Each frame, we determine how much real time passed since the last game update (elapsed). 
+    When we update the game state, we pass that in. The engine is then responsible for advancing the game world forward by that amount of time.
+    Say you’ve got a bullet shooting across the screen. With a fixed time step, in each frame,
+    you’ll move it according to its velocity. With a variable time step, you scale that 
+    velocity by the elapsed time. As the time step gets bigger, the bullet moves farther 
+    in each frame. That bullet will get  across the screen in the same amount of real time whether 
+    it’s twenty small fast steps or four big slow ones. This looks like a winner"
+    (http://gameprogrammingpatterns.com/game-loop.html)
+
+    This again can lead to a problem!
+    
+    - 1.4
+
+    To avoid any problem with a variable time-step affecting the user experience for a
+    multiplayer game, we can *update* the game according the a fixed period of time
+    (so physics, AI); but we *render* the game according to a variable time step (to free up
+    the processor power)
+
+    double previous = getCurrentTime();
+    double lag = 0.0;
+    while (true)
+    {
+        double current = getCurrentTime();
+        double elapsed = current - previous;
+        previous = current;
+        lag += elapsed;
+
+        processInput();
+
+        while (lag >= MS_PER_UPDATE)
+        {
+            update();
+            lag -= MS_PER_UPDATE; 
+
+            // note how this stops the rendering according to the lag
+            // and forces the game loop to update before it renders
+        }
+
+        render(); 
+    }
+
+    - 1.5
+
+    But this means that rendering occurs at a mismatch between updates:
+    imagine a bullet flying across the screen; at one point it's rendered on one side of the screen
+    and then at the next it's on the complete other side! Ridiculous!
+
+    We can do this by attempting to "extrapolate", and guess when and where the lag is
+
+    render(lag / MS_PER_UPDATE);
+        - Note that this means the value is normalized
+
+    
+2. Getting started
+    Because the rustlang environment is still relatively new, instead of working with
+    relatively "new" and "low-level" dev crates.
+
+    For gamedev philosophy, it is really important to always keep in mind that games take
+    a while to develop. And therefore, to stay motiavted, make sure to set small milestones
+    to keep yourself consistently motivated!!
+
+    "
+    1. Go one step at a time.
+    2. Work your way up to the vision you have.
+    3. Don't try to build every part of the game all at once.
+    "
+    We do not want to end up in a situation where we are stuck dead in the water, and
+    lose any and all momentum in the development!
+
+(TO READ:)
+https://gafferongames.com/post/fix_your_timestep/
