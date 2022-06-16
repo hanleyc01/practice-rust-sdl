@@ -3,7 +3,8 @@ use sdl2::image::{self, InitFlag, LoadTexture};
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
-use sdl2::render::{Texture, WindowCanvas}; // type WindowCanvas = Canvas<Window>
+use sdl2::render::{Texture, WindowCanvas}; use std::collections::VecDeque;
+// type WindowCanvas = Canvas<Window>
 use std::time::Duration;
 
 const PLAYER_MOVEMENT_SPEED: i32 = 5;
@@ -23,12 +24,12 @@ struct Player {
     position: Point,
     sprite: Rect,
     speed: i32,
-    direction: Direction,
+    movm_queue: VecDeque<Direction>,
 }
 
 impl Player {
     fn new(position: Point, sprite: Rect, speed: i32) -> Self {
-        Self { position, sprite, speed, direction: Direction::Right }
+        Self { position, sprite, speed, movm_queue: VecDeque::new() }
     }
 }
 
@@ -75,19 +76,21 @@ fn render(
 /// will cause the player's movement to be unpredictable, which is not great.
 fn update_player(player: &mut Player) {
     use self::Direction::*;
-    match player.direction {
-        Left => {
-            player.position = player.position.offset(-player.speed, 0);
-        },
-        Right => {
-            player.position = player.position.offset(player.speed, 0);
-        },
-        Up => {
-            player.position = player.position.offset(0, -player.speed);
-        },
-        Down => {
-            player.position = player.position.offset(0, player.speed);
-        },
+    match player.movm_queue.pop_front() {
+        // Left => {
+        //     player.position = player.position.offset(-player.speed, 0);
+        // },
+        // Right => {
+        //     player.position = player.position.offset(player.speed, 0);
+        // },
+        // Up => {
+        //     player.position = player.position.offset(0, -player.speed);
+        // },
+        // Down => {
+        //     player.position = player.position.offset(0, player.speed);
+        // },
+        Some(movm) => todo!(),
+        None => todo!(),
     }
 }
 
@@ -118,8 +121,6 @@ pub fn main() -> Result<(), String> {
 
     // if player is currently moving to stop directional inputs affecting current movement
     let mut is_moving: bool = false;
-    // tracking "queued" direction; so that if the player inputs a move after
-    let mut queue_direc: Direction = Direction::Right;
 
     let mut event_pump = sdl_context.event_pump()?;
     let mut i = 0;
@@ -134,15 +135,10 @@ pub fn main() -> Result<(), String> {
                 } => break 'running,
                 // When the arrow key is pressed
                 Event::KeyDown { keycode: Some(Keycode::Left), repeat: false, ..} => {
-                    queue_direc = Direction::Left;
-                    if !is_moving {
-                        player.speed= PLAYER_MOVEMENT_SPEED;
-                        player.direction = Direction::Left;
-                        is_moving = true;
-                    } 
+                    move_queue.push_back(Direction::Left);
                 },
                 Event::KeyDown { keycode: Some(Keycode::Right), repeat: false, ..} => {
-                    queue_direc = Direction::Right;
+                    move_queue.push_back(Direction::Right);
                     if !is_moving {
                         player.speed= PLAYER_MOVEMENT_SPEED;
                         player.direction = Direction::Right;
@@ -150,7 +146,7 @@ pub fn main() -> Result<(), String> {
                     }
                 },
                 Event::KeyDown { keycode: Some(Keycode::Up), repeat: false, ..} => {
-                    queue_direc = Direction::Up;
+                    move_queue.push_back(Direction::Up);
                     if !is_moving {
                         player.speed = PLAYER_MOVEMENT_SPEED;
                         player.direction = Direction::Up;
@@ -158,7 +154,7 @@ pub fn main() -> Result<(), String> {
                     }
                 },
                 Event::KeyDown { keycode: Some(Keycode::Down), repeat: false, ..} => {
-                    queue_direc = Direction::Down;
+                    move_queue.push_back(Direction::Down);
                     if !is_moving {
                         player.speed= PLAYER_MOVEMENT_SPEED;
                         player.direction = Direction::Down;
@@ -168,35 +164,31 @@ pub fn main() -> Result<(), String> {
                 
                 // When the arrow key is released
                 Event::KeyUp { keycode: Some(Keycode::Left), repeat: false, .. } => {
-                    if is_moving == true && player.direction == Direction::Left && queue_direc == Direction::Left {
-                        player.speed = 0;
-                        is_moving = false;
-                    } else {
-                        player.direction = queue_direc;
+                    match move_queue.pop_front() {
+                        Some(mov) => {
+                            if mov == Direction::Left {
+
+                            }
+                        },
+                        None => (),
                     }
                 },
                 Event::KeyUp { keycode: Some(Keycode::Right), repeat: false, .. } => {
-                    if is_moving == true && player.direction == Direction::Right && queue_direc == Direction::Right {
+                    if is_moving == true && player.direction == Direction::Right {
                         player.speed = 0;
                         is_moving = false;
-                    } else {
-                        player.direction = queue_direc;
                     }
                 },
                 Event::KeyUp { keycode: Some(Keycode::Up), repeat: false, .. } => {
-                    if is_moving == true && player.direction == Direction::Up && queue_direc == Direction::Up {
+                    if is_moving == true && player.direction == Direction::Up {
                         player.speed = 0;
                         is_moving = false;
-                    } else {
-                        player.direction = queue_direc;
                     }
                 },
                 Event::KeyUp { keycode: Some(Keycode::Down), repeat: false, .. } => {
-                    if is_moving == true && player.direction == Direction::Down && queue_direc == Direction::Down {
+                    if is_moving == true && player.direction == Direction::Down {
                         player.speed = 0;
                         is_moving = false;
-                    } else {
-                        player.direction = queue_direc;
                     }
                 },
                 _ => {},
