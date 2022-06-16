@@ -6,7 +6,7 @@ use sdl2::rect::{Point, Rect};
 use sdl2::render::{Texture, WindowCanvas}; // type WindowCanvas = Canvas<Window>
 use std::time::Duration;
 
-const PLAYER_MOVEMENT_SPEED: i32 = 20;
+const PLAYER_MOVEMENT_SPEED: i32 = 5;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Direction {
@@ -68,16 +68,25 @@ fn render(
     Ok(())
 }
 
+/// Instead of having the player's movement be tied to the event-handling section of the loop,
+/// instead we've tied it to the updating section of the loop. This allows for a smoother movement
+/// and doesn't rely player input entirely to be updated!!
+/// WARNING!: The book says that we ought not call this a bunch because the variation in the speed
+/// will cause the player's movement to be unpredictable, which is not great.
 fn update_player(player: &mut Player) {
     use self::Direction::*;
     match player.direction {
         Left => {
+            player.position = player.position.offset(-player.speed, 0);
         },
         Right => {
+            player.position = player.position.offset(player.speed, 0);
         },
         Up => {
+            player.position = player.position.offset(0, -player.speed);
         },
         Down => {
+            player.position = player.position.offset(0, player.speed);
         },
     }
 }
@@ -104,8 +113,11 @@ pub fn main() -> Result<(), String> {
     let mut player = Player::new(
         Point::new(0, 0), 
         Rect::new(0, 0, 26, 36),
-        5i32,
+        0i32,
     );
+
+    // if player is currently moving to stop directional inputs affecting current movement
+    let mut is_moving: bool = false;
 
     let mut event_pump = sdl_context.event_pump()?;
     let mut i = 0;
@@ -118,24 +130,75 @@ pub fn main() -> Result<(), String> {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'running,
-                Event::KeyDown { keycode: Some(Keycode::Left), ..} => {
-                    player.position = player.position.offset(-player.speed, 0);
+                // When the arrow key is pressed
+                Event::KeyDown { keycode: Some(Keycode::Left), repeat: false, ..} => {
+                    if !is_moving {
+                        player.speed= PLAYER_MOVEMENT_SPEED;
+                        player.direction = Direction::Left;
+                        is_moving = true;
+                    }
                 },
-                Event::KeyDown { keycode: Some(Keycode::Right), ..} => {
-                    player.position = player.position.offset(player.speed, 0);
+                Event::KeyDown { keycode: Some(Keycode::Right), repeat: false, ..} => {
+                    if !is_moving {
+                        player.speed= PLAYER_MOVEMENT_SPEED;
+                        player.direction = Direction::Right;
+                        is_moving = true;
+                    }
                 },
-                Event::KeyDown { keycode: Some(Keycode::Up), ..} => {
-                    player.position = player.position.offset(0, -player.speed);
+                Event::KeyDown { keycode: Some(Keycode::Up), repeat: false, ..} => {
+                    if !is_moving {
+                        player.speed = PLAYER_MOVEMENT_SPEED;
+                        player.direction = Direction::Up;
+                        is_moving = true;
+                    }
                 },
-                Event::KeyDown { keycode: Some(Keycode::Down), ..} => {
-                    player.position = player.position.offset(0, player.speed);
+                Event::KeyDown { keycode: Some(Keycode::Down), repeat: false, ..} => {
+                    if !is_moving {
+                        player.speed= PLAYER_MOVEMENT_SPEED;
+                        player.direction = Direction::Down;
+                        is_moving = true;
+                    }
                 },
-                _ => {}
+                // When the arrow key is released
+                Event::KeyUp { keycode: Some(Keycode::Left), repeat: false, .. } => {
+                    if is_moving == true && player.direction == Direction::Left {
+                        player.speed = 0;
+                        is_moving = false;
+                    }
+                    
+                    // Event::KeyUp { keycode: Some(Keycode::Left), repeat: false, .. } |
+                    // Event::KeyUp { keycode: Some(Keycode::Right), repeat: false, .. } |
+                    // Event::KeyUp { keycode: Some(Keycode::Up), repeat: false, .. } |
+                    // Event::KeyUp { keycode: Some(Keycode::Down), repeat: false, .. } => {
+                    //     player.speed = 0;
+                    //     is_moving = false;
+                    // },
+                },
+                Event::KeyUp { keycode: Some(Keycode::Right), repeat: false, .. } => {
+                    if is_moving == true && player.direction == Direction::Right {
+                        player.speed = 0;
+                        is_moving = false;
+                    }
+                },
+                Event::KeyUp { keycode: Some(Keycode::Up), repeat: false, .. } => {
+                    if is_moving == true && player.direction == Direction::Up {
+                        player.speed = 0;
+                        is_moving = false;
+                    }
+                },
+                Event::KeyUp { keycode: Some(Keycode::Down), repeat: false, .. } => {
+                    if is_moving == true && player.direction == Direction::Down {
+                        player.speed = 0;
+                        is_moving = false;
+                    }
+                },
+                _ => {},
             }
         }
 
         // Update
         i = (i + 1) % 255;
+        update_player(&mut player);
 
         // Render
         let color = Color::RGB(i, 64, 255 - i);
