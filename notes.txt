@@ -137,3 +137,6 @@
 
 (TO READ:)
 https://gafferongames.com/post/fix_your_timestep/
+
+3. Animation Notes
+    - Work on untying the animation to the framerate

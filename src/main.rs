@@ -26,6 +26,7 @@ struct Player {
     sprite: Rect,
     speed: i32,
     direction: Direction,
+    current_frame: i32,
 }
 
 impl Player {
@@ -35,7 +36,19 @@ impl Player {
             sprite,
             speed,
             direction: Direction::Right,
+            current_frame: 0,
         }
+    }
+}
+
+/// Returns the row in the spritesheet for animation
+fn direction_spritesheet(direction: Direction) -> i32 {
+    use self::Direction::*;
+    match direction {
+        Up => 3,
+        Down => 0,
+        Left => 1,
+        Right => 2,
     }
 }
 
@@ -53,20 +66,30 @@ fn render(
     canvas.clear();
 
     let (width, height) = canvas.output_size()?;
+    
+    // Defining the loop by which the animation cycles through
+    let (frame_width, frame_height) = player.sprite.size();
+    let current_frame = Rect::new(
+        player.sprite.x() + frame_width as i32 * player.current_frame,
+        player.sprite.y() + frame_height as i32 * direction_spritesheet(player.direction),
+        frame_width,
+        frame_height
+    );
+    // + + + +
+
     // Origin shifted from top left to center of the screen
     let world_origin = Point::new(width as i32 / 2, height as i32 / 2);
-
     let screen_position = player.position + world_origin;
 
     let screen_rect = Rect::from_center(
         screen_position,
-        player.sprite.width(),
-        player.sprite.height(),
+        frame_width,
+        frame_height
     );
     // We could also use copy_ex() for more oprtions :3
     canvas.copy(
         &texture,
-        player.sprite, // loc of sprite in spritesheet
+        current_frame, // loc of sprite in spritesheet
         screen_rect,   // dest of sprite in window
     )?;
 
@@ -95,6 +118,11 @@ fn update_player(player: &mut Player) {
         Down => {
             player.position = player.position.offset(0, player.speed);
         }
+    }
+
+    // Animates player iff they are moving
+    if player.speed != 0 {
+        player.current_frame = (player.current_frame + 1) % 3;
     }
 }
 
