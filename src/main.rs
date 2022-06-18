@@ -22,6 +22,40 @@ enum Direction {
     Right,
 }
 
+/// The current position of a given entity
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+struct Position(Point);
+
+/// Current speed of a given entity
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+struct Velocity {
+    speed: i32,
+    direction: Direction,
+}
+
+/// The current frame of the animation in the direction
+/// that the entity is moving
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+struct MovementAnimation {
+    current_frame: usize,
+    up_frames: Vec<Sprite>,
+    down_frames: Vec<Sprite>,
+    left_frames: Vec<Sprite>,
+    right_frames: Vec<Sprite>,
+}
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+struct Sprite {
+    /// The specific spritesheet to render from
+    spritesheet: usize,
+    /// The current region of the spritesheet to be rendered
+    region: Rect,
+}
+
 /// Abstract representation of the player as a point on the screen, and a
 /// location within the asset spritesheet
 #[derive(Debug)]
