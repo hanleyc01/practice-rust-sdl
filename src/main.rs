@@ -76,8 +76,7 @@ impl Player {
             direction: Direction::Right,
             current_frame: 0,
         }
-    }
-}
+    } }
 
 /// Returns the row in the spritesheet for animation
 fn direction_spritesheet(direction: Direction) -> i32 {
@@ -88,6 +87,30 @@ fn direction_spritesheet(direction: Direction) -> i32 {
         Left => 1,
         Right => 2,
     }
+}
+
+/// Create character animations using sprite-sheet information
+fn character_animation_frames(spritesheet: usize, top_left_frame: Rect, direct: Direction) -> Vec<Sprite> 
+{
+    // General system for encapsulating animations 
+    let (frame_width, frame_height) = top_left_frame.size();
+    let y_offset = top_left_frame.y() + frame_height as i32 * direction_spritesheet(direct);
+
+    let mut frames = Vec::new();
+    for i in 0..3 
+    {
+        frames.push(Sprite {
+            spritesheet,
+            region: Rect::new(
+                top_left_frame.x + frame_height as i32 * i,
+                y_offset,
+                frame_width,
+                frame_height,
+                ),
+        })
+    }
+
+    frames
 }
 
 /// This is our traditional render function for our game loop:
@@ -180,6 +203,36 @@ pub fn main() -> Result<(), String> {
     let texture = texture_creator.load_texture("assets/bardo.png")?;
 
     let mut player = Player::new(Point::new(0, 0), Rect::new(0, 0, 26, 36), 0i32);
+    
+    // first texture in spritesheet array
+    let player_spritesheet = 0;
+    let player_top_left_frame = Rect::new(0, 0, 26, 36);
+
+    let player_animation = MovementAnimation {
+        current_frame: 0,
+        up_frames: character_animation_frames(
+            player_spritesheet,
+            player_top_left_frame,
+            Direction::Up),
+        down_frame = character_animation_frames(
+            player.spritesheet,
+            player_top_left_frame,
+            Direction::Down,
+            ),
+        right_frame: character_animation_frames(
+            player_spritesheet,
+            player_top_left_frame,
+            Direction::Right,
+            ),
+        left_frame: character_animation_frames(
+            player.spritesheet,
+            player_top_left_frame,
+            Direction::Left,
+            ),
+    };
+
+
+
 
     // if player is currently moving to stop directional inputs affecting current movement
     let mut is_moving: bool = false;
