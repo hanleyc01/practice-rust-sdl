@@ -6,6 +6,10 @@ use sdl2::rect::{Point, Rect};
 use sdl2::render::{Texture, WindowCanvas};
 use std::collections::VecDeque;
 // type WindowCanvas = Canvas<Window>
+
+use specs::prelude::*;
+use specs_derive::Component;
+
 use std::time::Duration;
 
 const PLAYER_MOVEMENT_SPEED: i32 = 5;
@@ -66,14 +70,14 @@ fn render(
     canvas.clear();
 
     let (width, height) = canvas.output_size()?;
-    
+
     // Defining the loop by which the animation cycles through
     let (frame_width, frame_height) = player.sprite.size();
     let current_frame = Rect::new(
         player.sprite.x() + frame_width as i32 * player.current_frame,
         player.sprite.y() + frame_height as i32 * direction_spritesheet(player.direction),
         frame_width,
-        frame_height
+        frame_height,
     );
     // + + + +
 
@@ -81,14 +85,10 @@ fn render(
     let world_origin = Point::new(width as i32 / 2, height as i32 / 2);
     let screen_position = player.position + world_origin;
 
-    let screen_rect = Rect::from_center(
-        screen_position,
-        frame_width,
-        frame_height
-    );
+    let screen_rect = Rect::from_center(screen_position, frame_width, frame_height);
     // We could also use copy_ex() for more oprtions :3
     canvas.copy(
-        &texture,
+        texture,
         current_frame, // loc of sprite in spritesheet
         screen_rect,   // dest of sprite in window
     )?;
@@ -163,7 +163,7 @@ pub fn main() -> Result<(), String> {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'running,
-                
+
                 // When the arrow key is pressed
                 Event::KeyDown {
                     keycode: Some(Keycode::Left),
@@ -229,11 +229,11 @@ pub fn main() -> Result<(), String> {
                             movm_queue.pop_front();
                             player.direction = movm;
                         }
-                    },
+                    }
                     None => {
                         player.speed = 0;
                         is_moving = false;
-                    },
+                    }
                 },
                 Event::KeyUp {
                     keycode: Some(Keycode::Right),
@@ -249,11 +249,11 @@ pub fn main() -> Result<(), String> {
                             movm_queue.pop_front();
                             player.direction = movm;
                         }
-                    },
+                    }
                     None => {
                         player.speed = 0;
                         is_moving = false;
-                    },
+                    }
                 },
                 Event::KeyUp {
                     keycode: Some(Keycode::Up),
@@ -269,11 +269,11 @@ pub fn main() -> Result<(), String> {
                             movm_queue.pop_front();
                             player.direction = movm;
                         }
-                    },
+                    }
                     None => {
                         player.speed = 0;
                         is_moving = false;
-                    },
+                    }
                 },
                 Event::KeyUp {
                     keycode: Some(Keycode::Down),
@@ -289,15 +289,14 @@ pub fn main() -> Result<(), String> {
                             movm_queue.pop_front();
                             player.direction = movm;
                         }
-                    },
+                    }
                     None => {
                         player.speed = 0;
                         is_moving = false;
-                    },
-                    // if is_moving == true && player.direction == Direction::Down {
-                    //     player.speed = 0;
-                    //     is_moving = false;
-                    // }
+                    } // if is_moving == true && player.direction == Direction::Down {
+                      //     player.speed = 0;
+                      //     is_moving = false;
+                      // }
                 },
                 _ => {}
             }
