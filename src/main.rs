@@ -1,4 +1,7 @@
+
 mod components;
+mod physics;
+mod animator;
 
 use sdl2::event::Event;
 use sdl2::image::{self, InitFlag, LoadTexture};
@@ -102,22 +105,7 @@ fn render(
 /// WARNING!: The book says that we ought not call this a bunch because the variation in the speed
 /// will cause the player's movement to be unpredictable, which is not great.
 fn update_player(player: &mut Player) {
-    use self::Direction::*;
-    match player.direction {
-        Left => {
-            player.position = player.position.offset(-player.speed, 0);
-        }
-        Right => {
-            player.position = player.position.offset(player.speed, 0);
-        }
-        Up => {
-            player.position = player.position.offset(0, -player.speed);
-        }
-        Down => {
-            player.position = player.position.offset(0, player.speed);
-        }
-    }
-
+    
     // Animates player iff they are moving
     if player.speed != 0 {
         player.current_frame = (player.current_frame + 1) % 3;
@@ -144,6 +132,14 @@ pub fn main() -> Result<(), String> {
     let textures = [
         texture_creator.load_texture("assets/bardo.png")?,
     ];
+    
+    let mut dispatcher = DispatcherBuilder::new()
+        .with(physics::Physics, "Physics", &[])
+        .with(animator::Animator, "Animator", &[])
+        .build();
+    
+    let mut world = World::new();
+    dispatcher.setup(&mut world);
 
     // First texture in the textures array
     let player_spritesheet = 0;
@@ -157,18 +153,13 @@ pub fn main() -> Result<(), String> {
         right_frames: character_animation_frames(player_spritesheet, player_top_left_frame, Direction::Right)
     };
 
-    let mut world = World::new();
-
+ 
     world.create_entity()
         .with(Position(Point::new(0,0)))
         .with(Velocity { speed: 0, direction: Direction::Right })
         .with(player_animation.right_frames[0].clone())
         .with(player_animation)
         .build();
-
-
-
-
 
     // if player is currently moving to stop directional inputs affecting current movement
     let mut is_moving: bool = false;
@@ -327,7 +318,8 @@ pub fn main() -> Result<(), String> {
 
         // Update
         i = (i + 1) % 255;
-        update_player(&mut player);
+        dispatcher.dispatch(&mut world.res);
+        world.maintain();
 
         // Render
         let color = Color::RGB(i, 64, 255 - i);
