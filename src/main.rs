@@ -1,3 +1,5 @@
+mod components;
+
 use sdl2::event::Event;
 use sdl2::image::{self, InitFlag, LoadTexture};
 use sdl2::keyboard::Keycode;
@@ -8,75 +10,12 @@ use std::collections::VecDeque;
 // type WindowCanvas = Canvas<Window>
 
 use specs::prelude::*;
-use specs_derive::Component;
 
 use std::time::Duration;
 
+use crate::components::*;
+
 const PLAYER_MOVEMENT_SPEED: i32 = 5;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-
-/// The current position of a given entity
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
-struct Position(Point);
-
-/// Current speed of a given entity
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
-struct Velocity {
-    speed: i32,
-    direction: Direction,
-}
-
-/// The current frame of the animation in the direction
-/// that the entity is moving
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
-struct MovementAnimation {
-    current_frame: usize,
-    up_frames: Vec<Sprite>,
-    down_frames: Vec<Sprite>,
-    left_frames: Vec<Sprite>,
-    right_frames: Vec<Sprite>,
-}
-
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
-struct Sprite {
-    /// The specific spritesheet to render from
-    spritesheet: usize,
-    /// The current region of the spritesheet to be rendered
-    region: Rect,
-}
-
-/// Abstract representation of the player as a point on the screen, and a
-/// location within the asset spritesheet
-#[derive(Debug)]
-struct Player {
-    position: Point,
-    sprite: Rect,
-    speed: i32,
-    direction: Direction,
-    current_frame: i32,
-}
-
-impl Player {
-    fn new(position: Point, sprite: Rect, speed: i32) -> Self {
-        Self {
-            position,
-            sprite,
-            speed,
-            direction: Direction::Right,
-            current_frame: 0,
-        }
-    } }
 
 /// Returns the row in the spritesheet for animation
 fn direction_spritesheet(direction: Direction) -> i32 {
@@ -88,6 +27,8 @@ fn direction_spritesheet(direction: Direction) -> i32 {
         Right => 2,
     }
 }
+
+
 
 /// Create character animations using sprite-sheet information
 fn character_animation_frames(spritesheet: usize, top_left_frame: Rect, direct: Direction) -> Vec<Sprite> 
@@ -200,36 +141,31 @@ pub fn main() -> Result<(), String> {
         .expect("could not initialize the canvas");
 
     let texture_creator = canvas.texture_creator();
-    let texture = texture_creator.load_texture("assets/bardo.png")?;
+    let textures = [
+        texture_creator.load_texture("assets/bardo.png")?,
+    ];
 
-    let mut player = Player::new(Point::new(0, 0), Rect::new(0, 0, 26, 36), 0i32);
-    
-    // first texture in spritesheet array
+    // First texture in the textures array
     let player_spritesheet = 0;
-    let player_top_left_frame = Rect::new(0, 0, 26, 36);
+    let player_top_left_frame = Rect::new(0,0,26,36);
 
     let player_animation = MovementAnimation {
         current_frame: 0,
-        up_frames: character_animation_frames(
-            player_spritesheet,
-            player_top_left_frame,
-            Direction::Up),
-        down_frame = character_animation_frames(
-            player.spritesheet,
-            player_top_left_frame,
-            Direction::Down,
-            ),
-        right_frame: character_animation_frames(
-            player_spritesheet,
-            player_top_left_frame,
-            Direction::Right,
-            ),
-        left_frame: character_animation_frames(
-            player.spritesheet,
-            player_top_left_frame,
-            Direction::Left,
-            ),
+        up_frames: character_animation_frames(player_spritesheet, player_top_left_frame, Direction::Up),
+        down_frames: character_animation_frames(player_spritesheet, player_top_left_frame, Direction::Down),
+        left_frames: character_animation_frames(player_spritesheet, player_top_left_frame, Direction::Left),
+        right_frames: character_animation_frames(player_spritesheet, player_top_left_frame, Direction::Right)
     };
+
+    let mut world = World::new();
+
+    world.create_entity()
+        .with(Position(Point::new(0,0)))
+        .with(Velocity { speed: 0, direction: Direction::Right })
+        .with(player_animation.right_frames[0].clone())
+        .with(player_animation)
+        .build();
+
 
 
 
