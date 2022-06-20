@@ -318,7 +318,7 @@ pub fn main() -> Result<(), String> {
 
         // Update
         i = (i + 1) % 255;
-        dispatcher.dispatch(&mut world.res);
+        dispatcher.dispatch(&mut world);
         world.maintain();
 
         // Render
